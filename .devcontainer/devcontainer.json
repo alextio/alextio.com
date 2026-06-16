@@ -1,0 +1,70 @@
+{
+  "name": "Claude Code Sandbox",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "args": {
+      "TZ": "${localEnv:TZ:America/Chicago}"
+    }
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": true,
+      "configureZshAsDefault": true,
+      "installOhMyZsh": true,
+      "username": "node",
+      "upgradePackages": false
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  // --userns=keep-id maps the Podman VM user UID (1000) to the same UID in the
+  // container so the `node` user can write to the workspace bind mount.
+  // Remove this arg if switching to Docker — Docker does not support this flag.
+  "runArgs": ["--cap-add=NET_ADMIN", "--cap-add=NET_RAW", "--userns=keep-id"],
+  "forwardPorts": [4321, 3333],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "astro-build.astro-vscode",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "anthropic.claude-code"
+      ],
+      "settings": {
+        "claudeCode.allowDangerouslySkipPermissions": true,
+        "claudeCode.initialPermissionMode": "bypassPermissions",
+        "astro.enableAutoImport": true,
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "explicit"
+        },
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        "terminal.integrated.profiles.linux": {
+          "bash": {
+            "path": "bash",
+            "icon": "terminal-bash"
+          },
+          "zsh": {
+            "path": "zsh"
+          }
+        }
+      }
+    }
+  },
+  "mounts": [
+    "source=claude-code-bashhistory-${devcontainerId},target=/commandhistory,type=volume",
+    "source=claude-code-config-${devcontainerId},target=/home/node/.claude,type=volume"
+  ],
+  "containerEnv": {
+    "IS_SANDBOX": "1", // needed for running `claude --dangerously-skip-permissions` as root. See: https://www.reddit.com/r/ClaudeAI/comments/1lsqxis/claude_on_vps_how_to_dangerously_skip_permissions/
+    "NODE_OPTIONS": "--max-old-space-size=4096",
+    "CLAUDE_CONFIG_DIR": "/home/node/.claude",
+    "POWERLEVEL9K_DISABLE_GITSTATUS": "true"
+  },
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
+  "workspaceFolder": "/workspace",
+  "postStartCommand": "sudo /usr/local/bin/init-firewall.sh",
+  "waitFor": "postStartCommand",
+  // containerUser must match the username set in the common-utils feature above ("node").
+  "containerUser": "node"
+}
