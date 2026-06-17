@@ -6,10 +6,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     git \
     jq \
+    sudo \
+    tmux \
+    vim \
     && rm -rf /var/lib/apt/lists/*
 
 ARG USERNAME=dev
-RUN useradd -m -s /bin/bash $USERNAME
+RUN useradd -m -s /bin/bash $USERNAME \
+    && echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USERNAME \
+    && chmod 0440 /etc/sudoers.d/$USERNAME
 
 WORKDIR /workspace
 USER $USERNAME
