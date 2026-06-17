@@ -1,41 +1,41 @@
-# .devcontainer
+# Agent Instructions — .devcontainer
 
-Non-root devcontainer for the Astro portfolio site. Runs as the `node` user (UID 1000).
+Any agent that modifies files in this directory **must** verify that the dev container builds and starts successfully before considering the task complete.
 
-## Verifying the build
+## Required verification step
 
-Always use the devcontainer CLI to confirm the image builds and starts before opening a PR that touches this directory. Run both commands from the **repository root** (`/workspace` or wherever you cloned the repo), not from inside `.devcontainer/`. The CLI locates `devcontainer.json` automatically.
+After making changes to any file in `.devcontainer/`, run:
 
 ```bash
-devcontainer build --workspace-folder .
-devcontainer up --workspace-folder .
+devcontainer up --workspace-folder .. --remove-existing-container 2>&1
 ```
 
-A successful build ends with `{"outcome":"success",...}`. A successful `up` ends with `{"outcome":"success",...,"description":"Dev container started successfully."}`. Any earlier exit is a failure.
+This command must exit without error. If it fails, fix the issue before finishing.
 
-## Files
+After a successful `devcontainer up`, verify that the `vscode` user has read/write access to all named volume mount points:
 
-| File                | Purpose                                                                     |
-| ------------------- | --------------------------------------------------------------------------- |
-| `Dockerfile`        | Base image (`node:lts`) + pnpm + Claude Code global install                 |
-| `devcontainer.json` | Feature wiring, mounts, VS Code settings, firewall hook                     |
-| `init-firewall.sh`  | Runs at container start (as root via sudoers) to lock down outbound traffic |
+```bash
+devcontainer exec --workspace-folder . bash -c "
+  touch /home/vscode/.claude/.writetest && rm /home/vscode/.claude/.writetest && echo '.claude OK' || echo '.claude FAILED';
+"
+```
 
-## Podman quirks
+Both lines must print `OK`. 
 
-This project uses **Podman**, not Docker. Key differences:
+## Common files and what to watch for
 
-- **`--userns=keep-id`** is in `runArgs`. This maps the Podman VM's UID 1000 to UID 1000 inside the container so the `node` user can write to the workspace bind mount. **Remove this flag if you switch to Docker** — Docker does not support `--userns=keep-id` and will reject it.
+- **Dockerfile** — any change to base image, `RUN` steps, or `COPY` instructions can break the build. Verify layer by layer if needed.
+- **devcontainer.json** — invalid JSON or unknown feature identifiers will cause `devcontainer up` to fail immediately.
+- **devcontainer-lock.json** — this is auto-generated; do not edit it by hand. If it becomes stale after a `devcontainer.json` change, delete it and let `devcontainer up` regenerate it.
 
-- **`PODMAN_USERNS`** is a _host-side_ Podman env var. Setting it inside `remoteEnv` (which sets vars inside the container) has no effect. If you ever need to pass it, export it in your shell before running `devcontainer up`.
+## Binary installation
 
-- **`--cap-add=NET_ADMIN` and `--cap-add=NET_RAW`** are required for `init-firewall.sh` to configure iptables inside the container. Podman on macOS (via Podman Machine) supports these.
+Install binaries to `$HOME/.local/bin` (or another user-writable directory) and add it to `$PATH` in `.bashrc`. Do **not** write to `/usr/local/bin` or other root-owned paths — `postCreateCommand` runs as the `vscode` user and will fail with a permission error.
 
-## pnpm setup
+## Dockerfile
 
-`pnpm setup` is intentionally **not** called in the Dockerfile. During the image build, `$SHELL` is not yet set (zsh is installed later by the `common-utils` feature), so `pnpm setup` fails with `ERR_PNPM_UNKNOWN_SHELL`. The equivalent effect is achieved via `ENV PNPM_HOME` and `ENV PATH` in the Dockerfile.
+Be very reluctant to modify the Dockerfile. Prefer `post-install.sh` for tooling that changes over time (versioned CLIs, language runtimes, etc.). Only touch the Dockerfile if a dependency genuinely must be baked into the image layer (e.g., a system library that cannot be installed as a non-root user at runtime).
 
-## Known non-issues
+## Do not skip verification
 
-- The `IS_SANDBOX=1` env var is set even though the container runs as a non-root user. It is harmless and may be required by Claude Code's permission bypass mode.
-- `POWERLEVEL9K_DISABLE_GITSTATUS=true` suppresses a slow git status check in the Oh My Zsh theme when the workspace is large.
+Do not mark a task done based on a syntax check or linter alone. Only a successful `devcontainer up` confirms the container actually works.
