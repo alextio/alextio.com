@@ -47,5 +47,6 @@
   },
   "postCreateCommand": "for f in .devcontainer/scripts/post-create/*.sh; do echo \">>> $f\"; bash \"$f\" || { echo \"FAILED: $f\"; exit 1; }; done",
   "remoteUser": "dev",
+  "runArgs": ["--add-host=forgejo.local:host-gateway"],
   "shutdownAction": "stopContainer"
 }
