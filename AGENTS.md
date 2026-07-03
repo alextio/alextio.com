@@ -1,22 +1,4 @@
-This is an Astro personal portfolio site deployed to GitHub Pages. 
-
-## Commands
-
-```bash
-pnpm dev        # Start dev server at localhost:4321
-pnpm build      # Build for production (outputs to dist/)
-pnpm preview    # Preview production build locally
-```
-
-## Test Commands
-
-```bash
-pnpm test       # Vitest unit/component tests (src/**/*.test.ts)
-pnpm e2e        # Playwright end-to-end tests (e2e/**/*.spec.ts)
-pnpm build      # Type check + production build — always run before opening a PR
-```
-
-If these scripts are not yet in `package.json`, add them before running.
+This is an Astro personal portfolio site deployed to GitHub Pages.
 
 ---
 
@@ -104,3 +86,4 @@ For anything that adds new behavior, split the work across three agents in seque
 2. Update `AGENTS.md` (or any sub-directory `AGENTS.md`) if the change affects how the codebase works.
 3. Run a final `pnpm build` to confirm the branch is clean.
 4. Open a PR against `main` with a summary of what changed and how to verify it.
+</content>
