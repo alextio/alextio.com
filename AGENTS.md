@@ -17,37 +17,52 @@ For typo fixes, style tweaks, or single-file edits:
 
 ## Workflow: Multi-Agent Feature Development
 
-For anything that adds new behavior, split the work across three agents in sequence. Each agent hands off to the next; do not skip steps or collapse agents.
+**REQUIRED for any task that adds or changes a page, component, or feature: you MUST NOT implement it directly. You MUST spawn the agents below using the Agent tool with `isolation: "worktree"`. Do not write implementation code yourself.**
 
-### Agent 1 — Test Writer
+Use this decision rule:
 
-1. Read the feature spec from the issue/PR description or the user's prompt.
-2. If Playwright or Vitest are not installed, bootstrap them:
-   ```bash
-   pnpm add -D @playwright/test vitest @astrojs/check
-   ```
-3. Write **failing** tests that describe the expected behavior:
-   - Unit/component tests → `src/**/*.test.ts` (Vitest)
-   - Page/E2E tests → `e2e/**/*.spec.ts` (Playwright)
-4. Do **not** implement the feature — tests must fail at handoff.
-5. Commit the test files on a feature branch and report which tests fail and why.
+- Typo fix, single CSS tweak, one-line config change → Quick Changes workflow above
+- Everything else (new page, new component, changed behavior, new route) → Multi-Agent workflow below, no exceptions
 
-### Agent 2 — Implementer
+### How to invoke
 
-1. Receive the branch with failing tests from Agent 1.
-2. Implement the feature in `src/`.
-3. After each meaningful change, run:
-   ```bash
-   pnpm test && pnpm e2e && pnpm build
-   ```
-4. Iterate until all tests pass and the build is clean.
-5. Do **not** modify test files — only fix the implementation.
-6. Commit the implementation.
+Spawn each agent by calling the Agent tool with `isolation: "worktree"` and the contents of the corresponding prompt file. Pass the feature spec and the branch name from the previous agent as context.
 
-### Agent 3 — Docs + PR
+**Agent 1 — Test Writer**
 
-1. Receive the passing branch from Agent 2.
-2. Update `AGENTS.md` (or any sub-directory `AGENTS.md`) if the change affects how the codebase works.
-3. Run a final `pnpm build` to confirm the branch is clean.
-4. Open a PR against `main` with a summary of what changed and how to verify it.
+```
+subagent_type: claude
+isolation: worktree
+prompt: <contents of docs/agent_instructions/test-writer.md> + feature spec from the user
+```
+
+Wait for Agent 1 to complete and report the branch name and which tests are failing.
+
+**Agent 2 — Implementer**
+
+```
+subagent_type: claude
+isolation: worktree
+prompt: <contents of docs/agent_instructions/implementer.md> + branch name from Agent 1 + feature spec
+```
+
+Wait for Agent 2 to complete and confirm all tests pass.
+
+**Agent 3 — Docs + PR**
+
+```
+subagent_type: claude
+isolation: worktree
+prompt: <contents of docs/agent_instructions/docs-pr.md> + branch name from Agent 2
+```
+
+Report the PR URL to the user when Agent 3 completes.
+
+### Agent role summaries
+
+| Agent           | File                                     | Responsibility                              |
+| --------------- | ---------------------------------------- | -------------------------------------------- |
+| 1 — Test Writer | `docs/agent_instructions/test-writer.md` | Write failing tests only, no implementation |
+| 2 — Implementer | `docs/agent_instructions/implementer.md` | Make tests pass, no test modifications      |
+| 3 — Docs + PR   | `docs/agent_instructions/docs-pr.md`     | Update docs, open the pull request          |
 </content>
