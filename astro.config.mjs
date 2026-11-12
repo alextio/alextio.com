@@ -1,15 +1,15 @@
 // @ts-check
-import tailwindcss from '@tailwindcss/vite';
-import { defineConfig } from 'astro/config';
-import path from 'path';
+import tailwindcss from "@tailwindcss/vite";
+import { defineConfig } from "astro/config";
+import path from "path";
 
 export default defineConfig({
-  site: 'https://alextio.github.io',
+  site: "https://alextio.com",
   vite: {
     plugins: [tailwindcss()],
     resolve: {
       alias: {
-        '@': path.resolve('./src'),
+        "@": path.resolve("./src"),
       },
     },
   },
